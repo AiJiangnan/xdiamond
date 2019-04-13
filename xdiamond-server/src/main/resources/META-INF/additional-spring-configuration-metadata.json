@@ -1,0 +1,48 @@
+{
+  "groups": [
+    {
+      "name": "web.authentication",
+      "type": "cn.codeartist.xdiamond.server.interceptor.AuthInterceptor",
+      "sourceType": "cn.codeartist.xdiamond.server.interceptor.AuthInterceptor"
+    }
+  ],
+  "properties": [
+    {
+      "name": "web.authentication.enable",
+      "description": "enable web authentication.",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "sourceType": "cn.codeartist.xdiamond.server.interceptor.AuthInterceptor"
+    },
+    {
+      "name": "web.authentication.name",
+      "description": "web authentication request header name.",
+      "type": "java.lang.String",
+      "defaultValue": "sign",
+      "sourceType": "cn.codeartist.xdiamond.server.interceptor.AuthInterceptor"
+    },
+    {
+      "name": "web.authentication.token",
+      "description": "web authentication request header value.",
+      "type": "java.lang.String",
+      "defaultValue": "foobar",
+      "sourceType": "cn.codeartist.xdiamond.server.interceptor.AuthInterceptor"
+    },
+    {
+      "name": "spring.slave.datasource.url",
+      "type": "java.lang.String",
+      "description": "JDBC url for slave database."
+    },
+    {
+      "name": "spring.slave.datasource.username",
+      "type": "java.lang.String",
+      "description": "JDBC username for slave database."
+    },
+    {
+      "name": "spring.slave.datasource.password",
+      "type": "java.lang.String",
+      "description": "JDBC password for slave database."
+    }
+  ],
+  "hints": []
+}
