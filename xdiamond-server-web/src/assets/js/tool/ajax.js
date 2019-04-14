@@ -9,83 +9,51 @@ import qs from 'qs';
  * @returns {Ajax}
  * @constructor
  */
-Ajax = {
-  get: (url, headers, data) => {
-    if (url.includes('?')) {
-      
+const Ajax = {
+  // 处理URL
+  uriHandler: (url, data) => {
+    if (!data) return url;
+    url = url + (url.includes('?') ? url.endsWith('?') ? '' : '&' : '?') + qs.stringify(data);
+    return url.endsWith('?') || url.endsWith('&') ? url.substring(0, url.length - 1) : url;
+  },
+  // 插值URL
+  uriMatch: (url, ...uri) => {
+    const m = url.match(/\{\w+\}/g);
+    if (!m) return url;
+    if (m.length != uri.length) {
+      console.error('url match uri is error.');
+      return url;
     }
-    axios.get(url, {
-      headers: headers,
-      transformResponse: data => data.data,
-    });
+    for (let i = 0, n = m.length; i < n; i++) {
+      url = url.replace(m[i], uri[i]);
+    }
+    return url;
+  },
+  // 处理响应
+  responseHandler: resp => {
+    if (resp.status === HTTP.STATUS.OK.code) return resp.data;
+    console.error('http error', resp);
+  },
+  // GET
+  get: function (url, data, ...uri) {
+    url = this.uriHandler(url, data);
+    url = this.uriMatch(url, ...uri);
+    return axios.get(url).then(resp => this.responseHandler(resp));
+  },
+  // POST FORM
+  post: function (url, data, ...uri) {
+    url = this.uriMatch(url, ...uri);
+    return axios.post(url, qs.stringify(data), {
+      headers: { 'Content-Type': HTTP.CONTENT_TYPE.APPLICATION_FORM_URLENCODED_UTF8 }
+    }).then(resp => this.responseHandler(resp));
+  },
+  // POST JSON
+  postJson: function (url, data, ...uri) {
+    url = this.uriMatch(url, ...uri);
+    return axios.post(url, JSON.stringify(data), {
+      headers: { 'Content-Type': HTTP.CONTENT_TYPE.APPLICATION_JSON_UTF8 }
+    }).then(resp => this.responseHandler(resp));
   }
 }
-
-/**
- * POST请求
- *
- * @param url
- * @param data
- * @param callBack
- * @param failer
- */
-Ajax.prototype.post = function (url, data, callBack, failer) {
-  if (typeof arguments[1] === 'object') {
-    data = arguments[1];
-  } else if (typeof arguments[1] === 'function') {
-    data = {};
-    callBack = arguments[1];
-  }
-  url = url || '';
-  data = data || {};
-  // data = Object.assign(data, this.commonData);
-  const combine = this.combine(url, data);
-  axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
-  axios.post(combine.url, qs.stringify(data))
-    .then(function (response) {
-      if (response.status === HTTP.STATUS.OK.code) {
-        callBack(response.data);
-      } else {
-        failer && failer(response);
-      }
-    })
-    .catch(function (error) {
-      console.error(error);
-    });
-};
-
-/**
- * GET请求
- *
- * @param url
- * @param data
- * @param callBack
- * @param failer
- */
-Ajax.prototype.get = function (url, data, callBack, failer) {
-  if (typeof arguments[1] === 'object') {
-    data = arguments[1];
-  } else if (typeof arguments[1] === 'function') {
-    data = {};
-    callBack = arguments[1];
-  }
-  url = url || '';
-  data = data || {};
-  // data = Object.assign(data, this.commonData);
-  let isurl = this.combine(url, {}).url;
-  data = this.getData(data, 'getData');
-  isurl += data ? ('?' + data) : '';
-  axios.get(isurl, data)
-    .then(function (response) {
-      if (response.status === HTTP.STATUS.OK.code) {
-        callBack(response.data);
-      } else {
-        failer && failer(response)
-      }
-    })
-    .catch(function (error) {
-      console.error(error);
-    });
-};
 
 export default Ajax;
