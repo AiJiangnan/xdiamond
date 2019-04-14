@@ -1,6 +1,8 @@
 package cn.codeartist.xdiamond.common.enums;
 
 /**
+ * 命令枚举
+ *
  * @author 艾江南
  * @date 2019/4/13
  */

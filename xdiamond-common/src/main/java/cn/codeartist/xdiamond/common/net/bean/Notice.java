@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 通知
+ *
  * @author 艾江南
  * @date 2019/4/13
  */

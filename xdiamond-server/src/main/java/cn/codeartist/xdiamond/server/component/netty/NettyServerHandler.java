@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Netty服务端处理器
+ *
  * @author 艾江南
  * @date 2019/4/12
  */
@@ -17,7 +19,7 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<Message> {
 
     final private NettyServerService nettyServerService;
 
-    public NettyServerHandler(NettyServerService nettyServerService) {
+    NettyServerHandler(NettyServerService nettyServerService) {
         this.nettyServerService = nettyServerService;
     }
 

@@ -41,6 +41,7 @@
         <module>xdiamond-server</module>
         <module>xdiamond-client</module>
         <module>xdiamond-common</module>
+        <module>xdiamond-client-example</module>
     </modules>
 
     <properties>
