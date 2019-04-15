@@ -7,8 +7,6 @@ import cn.codeartist.xdiamond.common.net.bean.Request;
 import cn.codeartist.xdiamond.common.net.bean.Response;
 import com.alibaba.fastjson.JSON;
 import io.netty.channel.ChannelFuture;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.Promise;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -32,56 +30,45 @@ public class NettyClientServiceImpl extends AbstractNettyClientService {
         this.properties = properties;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void channelConnected(ChannelFuture future) {
-        boolean loadLocalConfig = true;
         try {
             boolean await = future.await(10, TimeUnit.SECONDS);
             if (await && future.isSuccess()) {
-                Request request = Request.builder()
-                        .command(Command.GET_CONFIG)
-                        .build();
-                Future<ConfigMessage> messageFuture = (Future<ConfigMessage>) sendMessage(request);
-                ConfigMessage configMessage = messageFuture.get(10, TimeUnit.SECONDS);
-                if (messageFuture.isSuccess()) {
-                    loadConfig(configMessage);
-                    logger.info("load config from xdiamond server success. {}", diamondProperties.getProjectInfo());
-                    loadLocalConfig = false;
-                }
+                loadServerConfig();
             }
             if (!future.isSuccess()) {
-                logger.error("load config from xdiamond server error. {}", diamondProperties.getProjectInfo(), future.cause());
+                logger.error("xdiamond connect server error. {}", diamondProperties.getProjectInfo(), future.cause());
             }
         } catch (Exception e) {
-            logger.error("load config from xdiamond server error. {}", diamondProperties.getProjectInfo(), e);
+            logger.error("xdiamond connect server error. {}", diamondProperties.getProjectInfo(), e);
+        }
+    }
+
+    @Override
+    public void loadServerConfig() {
+        boolean loadLocalConfig = true;
+        Request request = Request.builder().command(Command.GET_CONFIG)
+                .data("groupId", diamondProperties.getGroupId())
+                .data("artifactId", diamondProperties.getArtifactId())
+                .data("version", diamondProperties.getVersion())
+                .data("profile", diamondProperties.getProfile())
+                .build();
+        Response response = sendMessage(request);
+        Command command = Command.of(response.getCommand());
+        if (command != null && command == Command.GET_CONFIG && response.getData() != null) {
+            loadConfig(JSON.parseObject((String) response.getData().get("configs"), ConfigMessage.class));
+            logger.info("xdiamond load config from server success. {}", diamondProperties.getProjectInfo());
+            loadLocalConfig = false;
         }
         if (loadLocalConfig) {
             // TODO: 2019/4/15 艾江南 加载本地缓存
         }
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    protected void acceptMessage(Response response) {
-        Command command = Command.of(response.getCommand());
-        if (command == Command.GET_CONFIG) {
-            logger.debug("get configs: {}", response.dataValue("configs"));
-            Optional.ofNullable(response.dataValue("configs")).map(config -> JSON.parseObject((String) config, ConfigMessage.class)).ifPresent(configMessage -> {
-                Promise<ConfigMessage> promise = (Promise<ConfigMessage>) promiseMap.get(response.getId());
-                if (promise != null && !promise.isDone()) {
-                    promise.setSuccess(configMessage);
-                }
-            });
-        } else if (command == Command.CONFIG_CHANGED) {
-
-        } else if (command == Command.HEAR_BEAT) {
-
-        }
-    }
-
     private void loadConfig(ConfigMessage configMessage) {
         logger.debug("load config from server: {}", configMessage);
+        // TODO: 2019/4/15 艾江南 缓存本地
         Optional.ofNullable(configMessage).map(ConfigMessage::getConfigs).orElse(new ArrayList<>())
                 .forEach(config -> properties.put(config.getKey(), config.getValue()));
     }

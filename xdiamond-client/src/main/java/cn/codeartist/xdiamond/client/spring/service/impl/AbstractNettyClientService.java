@@ -7,14 +7,15 @@ import cn.codeartist.xdiamond.common.net.bean.Request;
 import cn.codeartist.xdiamond.common.net.bean.Response;
 import cn.codeartist.xdiamond.common.util.BaseThreadFactory;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelException;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timer;
-import io.netty.util.concurrent.*;
+import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.ConnectException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -31,53 +32,57 @@ public abstract class AbstractNettyClientService implements NettyClientService {
 
     final protected Logger logger = LoggerFactory.getLogger(AbstractNettyClientService.class);
 
-    final private Timer timer = new HashedWheelTimer(BaseThreadFactory.builder().namingPattern("").daemon(true).build());
+    final private Timer timer = new HashedWheelTimer(BaseThreadFactory.builder().namingPattern("xdiamond-clean-%d").daemon(true).build());
 
     final private AtomicInteger id = new AtomicInteger(1);
 
-    final protected Map<Integer, Promise<?>> promiseMap = new ConcurrentHashMap<>();
-
-    final private DefaultEventExecutorGroup eventExecutors = new DefaultEventExecutorGroup(1,
-            BaseThreadFactory.builder().namingPattern("xdiamond-%d").daemon(true).build());
+    private final Map<Integer, Promise<Response>> promiseMap = new ConcurrentHashMap<>();
 
     private Channel channel;
 
     @Override
     public void channelRegistered(Channel channel) {
         this.channel = channel;
-        logger.debug("channel registered.");
     }
 
     @Override
     public void channelActive(Channel channel) {
-        logger.debug("channel active.");
+
     }
 
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) {
         channel = null;
-        logger.debug("channel unregistered.");
     }
 
     @Override
-    public Future<?> sendMessage(Request request) {
+    public Response sendMessage(Request request) {
         if (channel == null || !channel.isActive()) {
-            return new FailedFuture<>(eventExecutors.next(), new ConnectException("channel is not available"));
+            throw new ChannelException("channel is not available");
         }
-        Promise<?> promise = new DefaultPromise<>(channel.eventLoop());
+        Promise<Response> promise = new DefaultPromise<>(channel.eventLoop());
         final int requestId = id.getAndIncrement();
         request.setId(requestId);
         promiseMap.put(requestId, promise);
         promise.addListener(future -> promiseMap.remove(requestId));
         timer.newTimeout(timeout -> {
-            Promise<?> remove = promiseMap.remove(requestId);
+            Promise<Response> remove = promiseMap.remove(requestId);
             if (remove != null && !remove.isDone()) {
                 remove.setFailure(new TimeoutException("no response from server, timeout!"));
             }
         }, 30, TimeUnit.SECONDS);
         logger.debug("request to server: {}", request);
         channel.writeAndFlush(Message.request().json(request).build());
-        return promise;
+        try {
+            Response response = promise.get(10, TimeUnit.SECONDS);
+            if (promise.isSuccess()) {
+                return response;
+            }
+            logger.error("xdiamond response is error.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override
@@ -85,19 +90,14 @@ public abstract class AbstractNettyClientService implements NettyClientService {
         if (message.getType() == MessageType.RESPONSE.code()) {
             Response response = message.responseOf();
             logger.debug("response from server: {}", response);
+            Promise<Response> promise = promiseMap.get(response.getId());
             if (!response.isSuccess()) {
-                Promise<?> promise = promiseMap.get(response.getId());
                 promise.setFailure(new RuntimeException(response.getError()));
                 return;
             }
-            acceptMessage(response);
+            if (promise != null && !promise.isDone()) {
+                promise.setSuccess(response);
+            }
         }
     }
-
-    /**
-     * 处理响应消息
-     *
-     * @param response 响应
-     */
-    abstract protected void acceptMessage(Response response);
 }

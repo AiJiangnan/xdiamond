@@ -35,15 +35,15 @@ public class DiamondClientBean implements InitializingBean, Closeable {
             ChannelFuture future = nettyClient.configure(diamondProperties, properties).connect();
             nettyClient.futureHandler(future);
         } catch (Exception e) {
-            logger.error("load config from xdiamond server error. {}", diamondProperties.getProjectInfo(), e);
+            logger.error("xdiamond load config error. {}", diamondProperties.getProjectInfo(), e);
         }
     }
 
     @PreDestroy
     @Override
     public void close() {
-        logger.info("diamond client stop...");
         nettyClient.close();
+        logger.info("diamond client stop...");
     }
 
     public Properties getProperties() {

@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.util.Properties;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -36,6 +38,9 @@ public class NettyClient implements Closeable {
 
     private EventLoopGroup group = new NioEventLoopGroup(0,
             BaseThreadFactory.builder().namingPattern("xdiamond-%d").daemon(true).build());
+
+    private ScheduledExecutorService schedule = new ScheduledThreadPoolExecutor(1,
+            BaseThreadFactory.builder().namingPattern("xdiamond-config").daemon(true).build());
 
     private Bootstrap bootstrap = new Bootstrap();
 
@@ -68,12 +73,14 @@ public class NettyClient implements Closeable {
         }
         EventLoop eventLoop = ctx.channel().eventLoop();
         eventLoop.schedule(() -> {
-            logger.info("reconnect to {}:{}", host, port);
+            logger.info("xdiamond reconnect to {}:{}", host, port);
             configureBootstrap(new Bootstrap(), eventLoop).connect().addListener(future -> {
                 if (future.isSuccess()) {
-                    logger.info("connect to {}:{} successful.", host, port);
+                    logger.info("xdiamond connect to {}:{} successful.", host, port);
+                    retryTimes = 0;
+                    schedule.schedule(() -> nettyClientService.loadServerConfig(), 5, TimeUnit.SECONDS);
                 } else {
-                    logger.error("connect to {}:{} error.", host, port, future.cause());
+                    logger.error("xdiamond connect to {}:{} error.", host, port, future.cause());
                 }
             });
         }, retryIntervalSeconds, TimeUnit.SECONDS);
