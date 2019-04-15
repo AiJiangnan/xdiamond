@@ -1,18 +1,26 @@
 <template>
-  <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
-  </div>
+  <el-card class="box-card">
+    <div slot="header" class="clearfix">
+      <span>码匠</span>
+      <el-button style="float: right; padding: 3px 0" type="text" @click="about">关于</el-button>
+    </div>
+    <div>Code Artist</div>
+  </el-card>
 </template>
 
 <script>
-// @ is an alias to /src
-import HelloWorld from "@/components/HelloWorld.vue";
-
 export default {
-  name: "home",
-  components: {
-    HelloWorld
+  methods: {
+    about: () => {
+      alert("About");
+    }
   }
 };
 </script>
+
+<style scoped>
+.box-card {
+  width: 480px;
+}
+</style>
+

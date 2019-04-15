@@ -1,31 +1,63 @@
 <template>
-  <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </div>
-    <router-view/>
-  </div>
+  <el-container style="height:100%;">
+    <el-header class="header">
+      <h2 style="margin:0 40px;line-height:60px;color:#fff;">XDiamond配置中心</h2>
+    </el-header>
+    <el-container>
+      <el-aside width="260px" class="side">
+        <Menu/>
+      </el-aside>
+      <el-container class="main-cont">
+        <el-main>
+          <router-view/>
+        </el-main>
+      </el-container>
+    </el-container>
+    <el-footer height="30px" class="footer">2017-{{new Date().getFullYear()}} &copy; CodeArtist</el-footer>
+  </el-container>
 </template>
 
+<script>
+import Menu from "./components/home/Menu";
+export default {
+  components: { Menu },
+  created() {}
+};
+</script>
+
+
 <style>
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
 #app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
+  font-family: "Avenir", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
 }
-#nav {
-  padding: 30px;
+
+.main-cont {
+  height: 100%;
+  background-color: #EBEEF5;
 }
 
-#nav a {
-  font-weight: bold;
-  color: #2c3e50;
+.header {
+  background-color: #409eff;
 }
 
-#nav a.router-link-exact-active {
-  color: #42b983;
+.side {
+  background-color: #DCDFE6;
+}
+
+.footer {
+  color: #fff;
+  background: #606266;
+  text-align: center;
+  line-height: 30px;
 }
 </style>
