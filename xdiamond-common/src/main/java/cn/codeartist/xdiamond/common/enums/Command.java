@@ -1,5 +1,7 @@
 package cn.codeartist.xdiamond.common.enums;
 
+import java.util.Arrays;
+
 /**
  * 命令枚举
  *
@@ -21,5 +23,9 @@ public enum Command {
 
     public int code() {
         return this.code;
+    }
+
+    public static Command of(Integer code) {
+        return Arrays.stream(values()).filter(val -> new Integer(val.code).equals(code)).findFirst().orElse(null);
     }
 }

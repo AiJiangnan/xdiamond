@@ -2,9 +2,10 @@ package cn.codeartist.xdiamond.client.spring.service;
 
 import cn.codeartist.xdiamond.common.net.bean.Message;
 import cn.codeartist.xdiamond.common.net.bean.Request;
-import cn.codeartist.xdiamond.common.net.bean.Response;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.concurrent.Future;
 
 /**
  * Netty通讯客户端服务
@@ -32,9 +33,9 @@ public interface NettyClientService {
      * 发送一次请求，并返回响应
      *
      * @param request 请求
-     * @return 响应
+     * @return 异步响应
      */
-    Response sendMessage(Request request);
+    Future<?> sendMessage(Request request);
 
     /**
      * 读取响应消息
@@ -43,4 +44,18 @@ public interface NettyClientService {
      * @param message 消息
      */
     void readMessage(ChannelHandlerContext ctx, Message message);
+
+    /**
+     * 管道未注册
+     *
+     * @param ctx 管道上下文
+     */
+    void channelUnregistered(ChannelHandlerContext ctx);
+
+    /**
+     * 连接成功
+     *
+     * @param future 连接成功的结果
+     */
+    void channelConnected(ChannelFuture future);
 }

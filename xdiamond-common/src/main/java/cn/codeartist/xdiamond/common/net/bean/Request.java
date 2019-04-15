@@ -61,7 +61,7 @@ public class Request {
         }
     }
 
-    private void putData(String key, Object value) {
+    public void putData(String key, Object value) {
         if (data == null) {
             data = new HashMap<>(16);
         }

@@ -7,7 +7,7 @@ public class NettyClientTest {
     @Test
     public void connect() {
         try {
-            new NettyClient().connect(null);
+            new NettyClient().connect();
         } catch (Exception e) {
             e.printStackTrace();
         }

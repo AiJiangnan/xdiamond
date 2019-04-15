@@ -1,6 +1,7 @@
 package cn.codeartist.xdiamond.client.example;
 
 import cn.codeartist.xdiamond.client.spring.DiamondClientBean;
+import cn.codeartist.xdiamond.client.spring.DiamondProperties;
 import cn.codeartist.xdiamond.client.spring.DiamondPropertySourcesBean;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -27,5 +28,15 @@ public class ExampleApplication {
     @Bean
     public DiamondPropertySourcesBean diamondPropertySourcesBean() {
         return new DiamondPropertySourcesBean();
+    }
+
+    @Bean
+    public DiamondProperties diamondProperties() {
+        DiamondProperties diamondProperties = new DiamondProperties();
+        diamondProperties.setGroupId("cn.codeartist");
+        diamondProperties.setArtifactId("xdiamond-client-example");
+        diamondProperties.setVersion("1.0.0-SNAPSHOT");
+        diamondProperties.setProfile("local");
+        return diamondProperties;
     }
 }

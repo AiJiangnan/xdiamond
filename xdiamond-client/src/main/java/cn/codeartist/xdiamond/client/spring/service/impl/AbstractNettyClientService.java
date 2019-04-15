@@ -10,11 +10,11 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timer;
-import io.netty.util.concurrent.DefaultPromise;
-import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.ConnectException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -29,38 +29,44 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class AbstractNettyClientService implements NettyClientService {
 
-    final protected Timer timer = new HashedWheelTimer(BaseThreadFactory.builder().namingPattern("").daemon(true).build());
+    final protected Logger logger = LoggerFactory.getLogger(AbstractNettyClientService.class);
 
-    final protected AtomicInteger id = new AtomicInteger();
+    final private Timer timer = new HashedWheelTimer(BaseThreadFactory.builder().namingPattern("").daemon(true).build());
+
+    final private AtomicInteger id = new AtomicInteger(1);
 
     final protected Map<Integer, Promise<?>> promiseMap = new ConcurrentHashMap<>();
 
-    final protected Logger logger = LoggerFactory.getLogger(AbstractNettyClientService.class);
+    final private DefaultEventExecutorGroup eventExecutors = new DefaultEventExecutorGroup(1,
+            BaseThreadFactory.builder().namingPattern("xdiamond-%d").daemon(true).build());
 
-    protected Channel channel;
+    private Channel channel;
 
     @Override
     public void channelRegistered(Channel channel) {
         this.channel = channel;
+        logger.debug("channel registered.");
     }
 
     @Override
     public void channelActive(Channel channel) {
-
+        logger.debug("channel active.");
     }
 
     @Override
-    public Response sendMessage(Request request) {
-//        final int requestId = id.getAndIncrement();
-//        Promise<?> promise = channel.writeAndFlush(Message.builder().json(request).build()).channel().newProgressivePromise();
-//        promiseMap.put(requestId, promise);
-//        promise.addListener(future -> {
-//
-//        });
-//        promise.addListener(future -> promiseMap.remove(requestId));
+    public void channelUnregistered(ChannelHandlerContext ctx) {
+        channel = null;
+        logger.debug("channel unregistered.");
+    }
 
-        DefaultPromise<?> promise = new DefaultPromise<>(channel.eventLoop());
+    @Override
+    public Future<?> sendMessage(Request request) {
+        if (channel == null || !channel.isActive()) {
+            return new FailedFuture<>(eventExecutors.next(), new ConnectException("channel is not available"));
+        }
+        Promise<?> promise = new DefaultPromise<>(channel.eventLoop());
         final int requestId = id.getAndIncrement();
+        request.setId(requestId);
         promiseMap.put(requestId, promise);
         promise.addListener(future -> promiseMap.remove(requestId));
         timer.newTimeout(timeout -> {
@@ -69,14 +75,16 @@ public abstract class AbstractNettyClientService implements NettyClientService {
                 remove.setFailure(new TimeoutException("no response from server, timeout!"));
             }
         }, 30, TimeUnit.SECONDS);
-//        return promise;
-        return null;
+        logger.debug("request to server: {}", request);
+        channel.writeAndFlush(Message.request().json(request).build());
+        return promise;
     }
 
     @Override
     public void readMessage(ChannelHandlerContext ctx, Message message) {
         if (message.getType() == MessageType.RESPONSE.code()) {
             Response response = message.responseOf();
+            logger.debug("response from server: {}", response);
             if (!response.isSuccess()) {
                 Promise<?> promise = promiseMap.get(response.getId());
                 promise.setFailure(new RuntimeException(response.getError()));

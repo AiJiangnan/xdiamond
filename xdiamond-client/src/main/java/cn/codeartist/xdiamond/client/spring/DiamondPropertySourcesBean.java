@@ -17,6 +17,8 @@ import java.util.Properties;
  */
 public class DiamondPropertySourcesBean implements InitializingBean, ApplicationContextAware {
 
+    final private String name = "xdiamond";
+    
     private ApplicationContext applicationContext;
 
     @Autowired
@@ -28,7 +30,7 @@ public class DiamondPropertySourcesBean implements InitializingBean, Application
         if (environment instanceof ConfigurableEnvironment) {
             Properties properties = diamondClientBean.getProperties();
             ConfigurableEnvironment configurableEnvironment = (ConfigurableEnvironment) environment;
-            PropertiesPropertySource propertySource = new PropertiesPropertySource("xdiamond", properties);
+            PropertiesPropertySource propertySource = new PropertiesPropertySource(name, properties);
             configurableEnvironment.getPropertySources().addLast(propertySource);
         }
     }

@@ -4,8 +4,6 @@ import cn.codeartist.xdiamond.client.spring.service.NettyClientService;
 import cn.codeartist.xdiamond.common.net.bean.Message;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Netty客户端处理器
@@ -15,12 +13,13 @@ import org.slf4j.LoggerFactory;
  */
 public class NettyClientHandler extends SimpleChannelInboundHandler<Message> {
 
-    final private Logger logger = LoggerFactory.getLogger(NettyClientHandler.class);
-
     final private NettyClientService nettyClientService;
 
-    NettyClientHandler(NettyClientService nettyClientService) {
-        this.nettyClientService = nettyClientService;
+    final private NettyClient nettyClient;
+
+    NettyClientHandler(NettyClient nettyClient) {
+        this.nettyClient = nettyClient;
+        this.nettyClientService = nettyClient.getNettyClientService();
     }
 
     @Override
@@ -41,8 +40,13 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<Message> {
     }
 
     @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) {
+        nettyClientService.channelUnregistered(ctx);
+        nettyClient.channelRetryConnect(ctx);
+    }
+
+    @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        logger.warn("server is unexpected disconnected.", cause);
         ctx.close();
     }
 }

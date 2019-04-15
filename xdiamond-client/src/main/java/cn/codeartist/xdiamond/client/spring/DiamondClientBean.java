@@ -1,11 +1,11 @@
 package cn.codeartist.xdiamond.client.spring;
 
 import cn.codeartist.xdiamond.client.net.NettyClient;
-import cn.codeartist.xdiamond.client.spring.service.NettyClientService;
-import cn.codeartist.xdiamond.client.spring.service.impl.NettyClientServiceImpl;
+import io.netty.channel.ChannelFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PreDestroy;
 import java.io.Closeable;
@@ -23,21 +23,19 @@ public class DiamondClientBean implements InitializingBean, Closeable {
 
     final private NettyClient nettyClient = new NettyClient();
 
-    final private NettyClientService nettyClientService;
-
     private Properties properties = new Properties();
 
-    public DiamondClientBean() {
-        nettyClientService = new NettyClientServiceImpl(properties);
-    }
+    @Autowired
+    private DiamondProperties diamondProperties;
 
     @Override
     public void afterPropertiesSet() {
         try {
             logger.info("diamond client start...");
-            nettyClient.connect(nettyClientService);
+            ChannelFuture future = nettyClient.configure(diamondProperties, properties).connect();
+            nettyClient.futureHandler(future);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("load config from xdiamond server error. {}", diamondProperties.getProjectInfo(), e);
         }
     }
 

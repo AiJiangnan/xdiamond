@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ExampleController {
 
     @GetMapping
-    public String test(@Value("${response}") String test) {
+    public String test(@Value("${name}") String test) {
         return test;
     }
 }

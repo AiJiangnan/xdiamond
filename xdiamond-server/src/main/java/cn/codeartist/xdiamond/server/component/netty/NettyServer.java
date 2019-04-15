@@ -53,7 +53,7 @@ public class NettyServer implements Closeable {
                 .channel()
                 .closeFuture()
                 .addListener(future -> close());
-        logger.debug("netty server started");
+        logger.debug("netty server started.");
     }
 
     private ChannelInitializer<SocketChannel> nettyChannelInitializer() {
